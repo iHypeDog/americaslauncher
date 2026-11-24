@@ -301,7 +301,7 @@ internal sealed partial class Launcher
         Find<TextBlock>("ExePath").Text = path ?? "No executable selected";
         SetLocalStatus(null);
         if (string.IsNullOrEmpty(Find<TextBlock>("InstallStatus").Text))
-            Find<TextBlock>("InstallStatus").Text = "Install VIctory, Visual C++ x64, Git, Rust, MSVC and the Windows SDK.";
+            Find<TextBlock>("InstallStatus").Text = "Install VIctory, Visual C++ x64, Git, Rust, MSVC, the Windows SDK and DXC 1.9.";
         Find<Button>("Play").ToolTip = path == null ? "Open game settings" : "Open " + Path.GetFileNameWithoutExtension(path);
     }
 
@@ -432,6 +432,7 @@ internal sealed partial class Launcher
             start.EnvironmentVariables["VICTORY_GAME_DIR"] = buildFolder;
             start.EnvironmentVariables["VICTORY_D3D12_WARP"] = "1";
             start.EnvironmentVariables["VICTORY_DATA_DIR"] = sessionData;
+            SetDxcEnvironment(start, FindDxc(ReadWindowsSdkRoot(), DxcFolder));
             var process = Process.Start(start);
             // Keep cleanup alive if the launcher window closes while the game is running.
             new Thread(() =>
