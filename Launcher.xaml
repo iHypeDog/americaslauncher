@@ -189,6 +189,7 @@
             <TextBlock x:Name="FolderPath" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="#FFD9BFD1" Margin="0,4,0,12"/>
             <Button x:Name="BrowseExe" Style="{StaticResource Button}" Content="Choose executable (.exe)" HorizontalAlignment="Left"/>
             <TextBlock x:Name="ExePath" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="#FFD9BFD1" Margin="0,4,0,0"/>
+            <TextBlock Text="Build paths reset when you close the launcher. Game saves reset each time you play." TextWrapping="Wrap" Foreground="#FFD9BFD1" Margin="0,6,0,0"/>
             <TextBlock Text="VIctory · Xbox Series X|S" FontSize="18" FontWeight="SemiBold" Margin="0,18,0,6"/>
             <TextBlock Text="This experimental build uses software rendering (WARP). Menus may open, but the game world still has rendering issues." TextWrapping="Wrap" Foreground="#FFD9BFD1"/>
             <StackPanel Orientation="Horizontal" Margin="0,12,0,0"><Button x:Name="Install" Style="{StaticResource Button}" Content="Install prerequisites"/><Button x:Name="Check" Style="{StaticResource Button}" Margin="8,0,0,0" Content="Check prerequisites"/></StackPanel>

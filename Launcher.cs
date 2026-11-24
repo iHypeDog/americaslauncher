@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Windows;
@@ -20,7 +21,6 @@ internal sealed partial class Launcher
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ViceCityLauncher");
     private static readonly string MediaFolder = Path.Combine(
         AppData, "Media", Assembly.ManifestModule.ModuleVersionId.ToString("N"));
-    private static readonly string Settings = Path.Combine(AppData, "game-path.txt");
 
     private readonly Window window;
     private readonly Grid options;
@@ -65,7 +65,7 @@ internal sealed partial class Launcher
         var hero = Find<Grid>("Hero");
         hero.SizeChanged += delegate { hero.Clip = new RectangleGeometry(new Rect(hero.RenderSize), 24, 24); };
 
-        RefreshGamePath(ReadGamePath());
+        SelectGame(null, null);
         Find<Grid>("TitleBar").MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed)
@@ -245,7 +245,7 @@ internal sealed partial class Launcher
         }
 
         if (installing) return;
-        if (!await CheckPrerequisites())
+        if (!await CheckPrerequisites(false))
         {
             ShowOptions();
             return;
@@ -265,7 +265,7 @@ internal sealed partial class Launcher
             try
             {
                 if (picker.ShowDialog(owner) == System.Windows.Forms.DialogResult.OK)
-                    SaveGamePath(gamePath, picker.SelectedPath);
+                    SelectGame(gamePath, picker.SelectedPath);
             }
             finally { owner.ReleaseHandle(); }
         }
@@ -290,53 +290,18 @@ internal sealed partial class Launcher
             return;
         }
 
-        SaveGamePath(picker.FileName, buildFolder);
+        SelectGame(picker.FileName, buildFolder);
     }
 
-    private string ReadGamePath()
-    {
-        try
-        {
-            if (File.Exists(Settings))
-            {
-                var lines = File.ReadAllLines(Settings);
-                if (lines.Length == 0) return null;
-                string path = lines[0].Trim();
-                if (lines.Length > 1 && lines[1] == "windows") return null;
-                buildFolder = lines.Length > 1 && lines[1] != "victory"
-                    ? lines[1] : Path.GetDirectoryName(path);
-                if (Path.IsPathRooted(path) && string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase))
-                    return path;
-            }
-        }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
-        catch (ArgumentException) { }
-        return null;
-    }
-
-    private void SaveGamePath(string path, string folder)
-    {
-        try
-        {
-            Directory.CreateDirectory(AppData);
-            File.WriteAllLines(Settings, new[] { path ?? "", folder ?? "" });
-            buildFolder = folder;
-            RefreshGamePath(path);
-
-        }
-        catch (IOException error) { ShowError(error); }
-        catch (UnauthorizedAccessException error) { ShowError(error); }
-    }
-
-    private void RefreshGamePath(string path)
+    private void SelectGame(string path, string folder)
     {
         gamePath = path;
+        buildFolder = folder;
         Find<TextBlock>("FolderPath").Text = string.IsNullOrEmpty(buildFolder) ? "No folder selected" : buildFolder;
         Find<TextBlock>("ExePath").Text = path ?? "No executable selected";
         SetLocalStatus(null);
         if (string.IsNullOrEmpty(Find<TextBlock>("InstallStatus").Text))
-            Find<TextBlock>("InstallStatus").Text = "Check VIctory and the Visual C++ x64 runtime.";
+            Find<TextBlock>("InstallStatus").Text = "Install VIctory, Visual C++ x64, Git, Rust, MSVC and the Windows SDK.";
         Find<Button>("Play").ToolTip = path == null ? "Open game settings" : "Open " + Path.GetFileNameWithoutExtension(path);
     }
 
@@ -392,17 +357,23 @@ internal sealed partial class Launcher
         return null;
     }
 
-    private async Task<bool> CheckPrerequisites()
+    private async Task<bool> CheckPrerequisites(bool includeBuild = true)
     {
         if (installing) return false;
         installing = true;
         var status = Find<TextBlock>("InstallStatus");
         SetBusy(true);
-        status.Text = "Checking Visual C++ x64 and starting VIctory…";
+        status.Text = includeBuild ? "Checking runtime and build prerequisites…" : "Checking VIctory and Visual C++ x64…";
         try
         {
-            string problem = await Task.Run(() => ProbeRuntime());
-            status.Text = problem ?? "Checks passed. Visual C++ x64 is installed and VIctory started successfully.";
+            string problem = await Task.Run(() =>
+            {
+                string runtimeProblem = ProbeRuntime();
+                if (runtimeProblem == null && includeBuild)
+                    CheckBuildPrerequisites();
+                return runtimeProblem;
+            });
+            status.Text = problem ?? (includeBuild ? "Runtime and build checks passed." : "VIctory is ready to play.");
             return problem == null;
         }
         catch (Exception error) { status.Text = "Check failed. " + error.Message; return false; }
@@ -421,34 +392,26 @@ internal sealed partial class Launcher
         installing = true;
         var status = Find<TextBlock>("InstallStatus");
         SetBusy(true);
-        status.Text = "Preparing VIctory and Visual C++ x64…";
         try
         {
-            int result = await Task.Run(() =>
+            IProgress<string> progress = new Progress<string>(message => status.Text = message);
+            status.Text = "Preparing VIctory and Visual C++ x64…";
+            bool restart = await Task.Run(() =>
             {
                 Extract("LICENSE");
                 Extract("victory-source.zip");
                 Extract("victory.exe");
-                if (HasCppRuntime()) return 0;
-                var installer = new ProcessStartInfo(Extract("VC_redist.x64.exe"), "/install /passive /norestart")
+                if (!HasCppRuntime())
                 {
-                    UseShellExecute = true,
-                    WorkingDirectory = MediaFolder
-                };
-                using (var process = Process.Start(installer))
-                {
-                    process.WaitForExit();
-                    return process.ExitCode;
+                    int result = RunInstaller(Extract("VC_redist.x64.exe"), "/install /passive /norestart");
+                    if (result == 3010 || result == 1641) return true;
+                    if ((result != 0 && result != 1638) || !HasCppRuntime())
+                        throw new IOException("Visual C++ installation returned code " + result + ".");
                 }
+                return InstallBuildPrerequisites(progress);
             });
-            if (result == 3010) status.Text = "Installation complete. Restart Windows before playing.";
-            else if (result == 0 || result == 1638)
-            {
-                status.Text = "Checking the installation…";
-                status.Text = await Task.Run(() => ProbeRuntime()) ??
-                    "Checks passed. Visual C++ x64 is installed and VIctory started successfully.";
-            }
-            else status.Text = "Visual C++ installation returned code " + result + ". Run the installer again.";
+            status.Text = restart ? "Restart Windows, then select Install prerequisites again to finish setup." :
+                await Task.Run(() => ProbeRuntime()) ?? "Runtime and build prerequisites are ready.";
         }
         catch (Exception error) { status.Text = "Installation interrupted. " + error.Message; }
         finally { installing = false; SetBusy(false); }
@@ -456,8 +419,11 @@ internal sealed partial class Launcher
 
     private void LaunchGame(string path)
     {
+        string sessionData = Path.Combine(Path.GetTempPath(), "Americas-" + Guid.NewGuid().ToString("N"));
+        bool started = false;
         try
         {
+            Directory.CreateDirectory(sessionData);
             var start = new ProcessStartInfo(RuntimePath(ReadActive()), "run \"" + path + "\" --execute")
             {
                 UseShellExecute = false,
@@ -465,12 +431,28 @@ internal sealed partial class Launcher
             };
             start.EnvironmentVariables["VICTORY_GAME_DIR"] = buildFolder;
             start.EnvironmentVariables["VICTORY_D3D12_WARP"] = "1";
-            using (Process.Start(start)) { }
+            start.EnvironmentVariables["VICTORY_DATA_DIR"] = sessionData;
+            var process = Process.Start(start);
+            // Keep cleanup alive if the launcher window closes while the game is running.
+            new Thread(() =>
+            {
+                try { using (process) process.WaitForExit(); }
+                finally { RemoveSessionData(sessionData); }
+            }).Start();
+            started = true;
         }
         catch (IOException error) { ShowError(error); }
         catch (UnauthorizedAccessException error) { ShowError(error); }
         catch (System.ComponentModel.Win32Exception error) { ShowError(error); }
         catch (InvalidOperationException error) { ShowError(error); }
+        finally { if (!started) RemoveSessionData(sessionData); }
+    }
+
+    private static void RemoveSessionData(string directory)
+    {
+        try { Directory.Delete(directory, true); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private void ShowError(Exception error)

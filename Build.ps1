@@ -20,6 +20,6 @@ $resources = $sources | ForEach-Object {
     '/resource:{0},{1}' -f (Join-Path $PSScriptRoot $_), (Split-Path $_ -Leaf)
 }
 
-& (Join-Path $framework 'csc.exe') /nologo /target:winexe /platform:x64 /optimize+ "/out:$output" "/win32icon:$icon" @references @resources (Join-Path $PSScriptRoot 'Launcher.cs') (Join-Path $PSScriptRoot 'Updater.cs')
+& (Join-Path $framework 'csc.exe') /nologo /target:winexe /platform:x64 /optimize+ "/out:$output" "/win32icon:$icon" @references @resources (Join-Path $PSScriptRoot 'Launcher.cs') (Join-Path $PSScriptRoot 'Updater.cs') (Join-Path $PSScriptRoot 'Prerequisites.cs')
 if ($LASTEXITCODE -ne 0) { throw "A compilação falhou (código $LASTEXITCODE)." }
 Get-Item -LiteralPath $output
