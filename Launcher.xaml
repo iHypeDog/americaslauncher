@@ -156,7 +156,7 @@
                 <TextBlock Text="Play" FontSize="32" FontWeight="Bold" VerticalAlignment="Center"/>
               </StackPanel>
             </Button>
-            <Button x:Name="Update" Content="update version" Style="{StaticResource Button}" Margin="14,0,0,0" VerticalAlignment="Center" ToolTip="Build the latest VIctory revision from GitHub"/>
+            <Button x:Name="Update" Content="update version" Style="{StaticResource Button}" Margin="14,0,0,0" VerticalAlignment="Center" ToolTip="Build the latest victory-gta6 revision in Release mode"/>
           </StackPanel>
           <Button x:Name="ToggleMotion" Style="{StaticResource Icon}" Background="#D8201526" FontFamily="Segoe MDL2 Assets"
                   Content="&#xE769;" FontSize="15" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,25,24"/>
@@ -191,7 +191,7 @@
             <TextBlock x:Name="ExePath" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="#FFD9BFD1" Margin="0,4,0,0"/>
             <TextBlock Text="Build paths reset when you close the launcher. Game saves reset each time you play." TextWrapping="Wrap" Foreground="#FFD9BFD1" Margin="0,6,0,0"/>
             <TextBlock Text="VIctory · Xbox Series X|S" FontSize="18" FontWeight="SemiBold" Margin="0,18,0,6"/>
-            <TextBlock Text="This experimental build uses software rendering (WARP). Menus may open, but the game world still has rendering issues." TextWrapping="Wrap" Foreground="#FFD9BFD1"/>
+            <TextBlock Text="Uses your Direct3D 12 GPU. World rendering and frame rates are still experimental." TextWrapping="Wrap" Foreground="#FFD9BFD1"/>
             <StackPanel Orientation="Horizontal" Margin="0,12,0,0"><Button x:Name="Install" Style="{StaticResource Button}" Content="Install prerequisites"/><Button x:Name="Check" Style="{StaticResource Button}" Margin="8,0,0,0" Content="Check prerequisites"/></StackPanel>
             <TextBlock x:Name="InstallStatus" TextWrapping="Wrap" Margin="0,8,0,0" Foreground="#FFD9BFD1"/>
           </StackPanel>

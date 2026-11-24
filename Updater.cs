@@ -10,8 +10,9 @@ using System.Windows.Controls;
 
 internal sealed partial class Launcher
 {
-    private const string Repository = "https://github.com/Marvisak/VIctory.git";
-    private static readonly string Updates = Path.Combine(AppData, "Updates");
+    private const string Repository = "https://github.com/fxceless/victory-gta6.git";
+    private const string BundledRevision = "90228a7dc66010281fdcfad10ac00c3a252be2f3";
+    private static readonly string Updates = Path.Combine(AppData, "Updates", "victory-gta6");
     private static readonly string ActiveFile = Path.Combine(Updates, "active.txt");
     private static readonly string UpdateSource = Path.Combine(Updates, "source");
 
@@ -84,7 +85,7 @@ internal sealed partial class Launcher
         try
         {
             var active = ReadActive();
-            string current = active == null ? "015d45bfff4d82e7afad89afe10dd24e5a402ef8" : active[0];
+            string current = active == null ? BundledRevision : active[0];
             if (current == revision && ProbeRuntime() == null)
                 return "VIctory is already up to date (" + shortId + ").";
         }
@@ -94,13 +95,13 @@ internal sealed partial class Launcher
         string toolchain = ReadToolchain();
         string dxc = RequireDxc();
         progress.Report("Building " + shortId + "…");
-        RunTool(rustup, "run --install " + toolchain + " cargo build --locked --profile diag -p victory --features diagnostics --target " +
+        RunTool(rustup, "run --install " + toolchain + " cargo build --locked --release -p victory --target " +
             BuildTarget + " --target-dir ../build", UpdateSource, dxc);
         string slot = Guid.NewGuid().ToString("N");
         var next = new[] { revision, slot, "" };
         string exe = RuntimePath(next);
         Directory.CreateDirectory(Path.GetDirectoryName(exe));
-        File.Copy(Path.Combine(Updates, "build", BuildTarget, "diag", "victory.exe"), exe);
+        File.Copy(Path.Combine(Updates, "build", BuildTarget, "release", "victory.exe"), exe);
         progress.Report("Testing update…");
         string problem = TestStartup(exe);
         if (problem != null) throw new IOException(problem);
