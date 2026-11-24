@@ -366,20 +366,26 @@ internal sealed partial class Launcher
         installing = true;
         var status = Find<TextBlock>("InstallStatus");
         SetBusy(true);
-        status.Text = includeBuild ? "Checking runtime and build prerequisites…" : "Checking VIctory and Visual C++ x64…";
+        status.Text = includeBuild ? "Checking runtime and build prerequisites…" : "Checking VIctory, CPU and graphics support…";
+        string runtimeDetails = null;
         try
         {
             string problem = await Task.Run(() =>
             {
-                string runtimeProblem = ProbeRuntime();
+                string runtimeProblem = ProbePlayRequirements(out runtimeDetails);
                 if (runtimeProblem == null && includeBuild)
                     CheckBuildPrerequisites();
                 return runtimeProblem;
             });
-            status.Text = problem ?? (includeBuild ? "Runtime and build checks passed." : "VIctory is ready to play.");
+            status.Text = problem ?? (includeBuild ? runtimeDetails + " Build checks passed." : runtimeDetails);
             return problem == null;
         }
-        catch (Exception error) { status.Text = "Check failed. " + error.Message; return false; }
+        catch (Exception error)
+        {
+            status.Text = runtimeDetails == null ? "Check failed. " + error.Message :
+                runtimeDetails + " Build check failed. " + error.Message;
+            return false;
+        }
         finally { installing = false; SetBusy(false); }
     }
 
@@ -415,7 +421,13 @@ internal sealed partial class Launcher
                 return InstallBuildPrerequisites(progress);
             });
             status.Text = restart ? "Restart Windows, then select Install prerequisites again to finish setup." :
-                await Task.Run(() => ProbeRuntime()) ?? "Runtime and build prerequisites are ready.";
+                await Task.Run(() =>
+                {
+                    string runtimeDetails;
+                    string problem = ProbePlayRequirements(out runtimeDetails);
+                    return problem == null ? runtimeDetails + " Build prerequisites are ready." :
+                        "Build prerequisites are ready. " + problem;
+                });
         }
         catch (Exception error) { status.Text = "Installation interrupted. " + error.Message; }
         finally { installing = false; SetBusy(false); }

@@ -10,4 +10,6 @@ Select the build folder and executable before playing. The launcher keeps those 
 
 Play uses Direct3D 12 hardware rendering and pauses the launcher's background video until the game exits. World rendering and frame rate depend on the fork's current compatibility.
 
+**Play** and **Check prerequisites** check the Visual C++ x64 runtime, VIctory startup, CPU support for AVX2 and hardware Direct3D 12 support for Shader Model 6.6. The status shows the adapter Windows reported and how much memory commit is available. The graphics driver and Windows determine which features are available. **Check prerequisites** also verifies the separate tools used to build updates.
+
 The bundled runtime was built from revision `90228a7dc66010281fdcfad10ac00c3a252be2f3` with `cargo build --locked --release -p victory --target x86_64-pc-windows-msvc`. Its corresponding source and GPL license are in `runtime/`.
