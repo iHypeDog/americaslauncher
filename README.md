@@ -16,23 +16,3 @@ You need Windows 10 or 11 x64, a CPU with AVX2, and a Direct3D 12 GPU with Shade
 ## Saves and settings
 
 The launcher remembers the build folder and executable in `%LOCALAPPDATA%\ViceCityLauncher\game-path.txt`. VIctory stores saves and in-game settings in `%LOCALAPPDATA%\victory\data` by default. The launcher and terminal share saves when they use the same VIctory data folder.
-
-## Build the launcher
-
-The launcher uses C# and WPF. Run the build script from the repository root on Windows x64 with .NET Framework 4.8.
-
-```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\Build.ps1
-```
-
-The script creates `Americas Launcher.exe` in the repository root.
-
-## Bundled runtime
-
-The included VIctory executable was built from revision [`90228a7d`](https://github.com/fxceless/victory-gta6/commit/90228a7dc66010281fdcfad10ac00c3a252be2f3).
-
-```powershell
-cargo build --locked --release -p victory --target x86_64-pc-windows-msvc
-```
-
-The corresponding [source archive](./runtime/victory-source.zip) and [GPL license](./runtime/LICENSE) ship with the launcher.
