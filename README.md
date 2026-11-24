@@ -13,14 +13,6 @@ You need Windows 10 or 11 x64, a CPU with AVX2, and a Direct3D 12 GPU with Shade
 
 **Play** uses Direct3D 12 hardware rendering. The launcher extracts the bundled runtime as needed and pauses its background video during gameplay. World rendering and frame rates depend on the fork's compatibility.
 
-## Prerequisites and updates
-
-- **Install prerequisites** sets up the Visual C++ x64 runtime and the tools used to build updates. It uses WinGet for missing Windows packages and prepares Git, MSVC, the Windows SDK, the fork's pinned Rust toolchain, and its locked Cargo dependencies. Setup needs internet access and may request administrator permission. If prompted to restart Windows, reopen the launcher and run setup again.
-- **Check prerequisites** verifies the runtime and build tools.
-- **update version** fetches the latest revision of the fork and compiles it in Release mode.
-
-Setup uses DXC 1.9 or later from the Windows SDK when available. Otherwise, it downloads and verifies Microsoft's DXC 1.9 x64 package and installs it for the current user.
-
 ## Saves and settings
 
 The launcher remembers the build folder and executable in `%LOCALAPPDATA%\ViceCityLauncher\game-path.txt`. VIctory stores saves and in-game settings in `%LOCALAPPDATA%\victory\data` by default. The launcher and terminal share saves when they use the same VIctory data folder.
