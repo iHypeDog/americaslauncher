@@ -92,9 +92,10 @@ internal sealed partial class Launcher
 
         string rustup = RequireTool("rustup");
         string toolchain = ReadToolchain();
+        string dxc = RequireDxc();
         progress.Report("Building " + shortId + "…");
         RunTool(rustup, "run --install " + toolchain + " cargo build --locked --profile diag -p victory --features diagnostics --target " +
-            BuildTarget + " --target-dir ../build", UpdateSource);
+            BuildTarget + " --target-dir ../build", UpdateSource, dxc);
         string slot = Guid.NewGuid().ToString("N");
         var next = new[] { revision, slot, "" };
         string exe = RuntimePath(next);
@@ -113,7 +114,7 @@ internal sealed partial class Launcher
         return "VIctory updated to " + shortId + ". Press Play to use this version.";
     }
 
-    private static string RunTool(string tool, string arguments, string directory)
+    private static string RunTool(string tool, string arguments, string directory, string dxc = null)
     {
         var start = new ProcessStartInfo(tool, arguments) {
             WorkingDirectory = directory, UseShellExecute = false, CreateNoWindow = true,
@@ -121,6 +122,7 @@ internal sealed partial class Launcher
         };
         start.EnvironmentVariables["GIT_TERMINAL_PROMPT"] = "0";
         start.EnvironmentVariables["PATH"] = ToolSearchPath();
+        SetDxcEnvironment(start, dxc);
         using (var process = Process.Start(start))
         {
             var output = process.StandardOutput.ReadToEndAsync();

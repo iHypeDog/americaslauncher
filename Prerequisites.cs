@@ -47,6 +47,12 @@ internal sealed partial class Launcher
 
         return WithUpdateLock(() =>
         {
+            if (FindDxc(ReadWindowsSdkRoot(), DxcFolder) == null)
+            {
+                progress.Report("Installing Microsoft DXC 1.9 x64…");
+                InstallDxc(DxcFolder);
+            }
+            CheckDxc();
             progress.Report("Downloading the VIctory build configuration…");
             CheckoutLatest(RequireTool("git"));
             string rustup = RequireTool("rustup");
@@ -66,6 +72,7 @@ internal sealed partial class Launcher
         string rustup = RequireTool("rustup");
         if (!HasNativeBuildTools())
             throw new IOException("MSVC or the Windows SDK is missing. Select Install prerequisites.");
+        CheckDxc();
         WithUpdateLock(() =>
         {
             string toolchain = ReadToolchain();
@@ -73,6 +80,12 @@ internal sealed partial class Launcher
             RunTool(rustup, "run " + toolchain + " cargo fetch --offline --locked --target " + BuildTarget, UpdateSource);
             return true;
         });
+    }
+
+    private static void CheckDxc()
+    {
+        string directory = RequireDxc();
+        RunTool(Path.Combine(directory, "dxc.exe"), "--version", directory);
     }
 
     private static string ReadToolchain()
@@ -110,11 +123,7 @@ internal sealed partial class Launcher
         if (string.IsNullOrEmpty(FindVisualStudio("-products * -requires " + CppComponent)))
             return false;
 
-        const string kitsKey = @"SOFTWARE\Microsoft\Windows Kits\Installed Roots";
-        string sdkRoot;
-        using (var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
-        using (var kits = registry.OpenSubKey(kitsKey))
-            sdkRoot = kits == null ? null : kits.GetValue("KitsRoot10") as string;
+        string sdkRoot = ReadWindowsSdkRoot();
         if (string.IsNullOrEmpty(sdkRoot)) return false;
         string libraries = Path.Combine(sdkRoot, "Lib");
         if (!Directory.Exists(libraries)) return false;
@@ -126,6 +135,14 @@ internal sealed partial class Launcher
                 return true;
         }
         return false;
+    }
+
+    private static string ReadWindowsSdkRoot()
+    {
+        const string kitsKey = @"SOFTWARE\Microsoft\Windows Kits\Installed Roots";
+        using (var registry = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry32))
+        using (var kits = registry.OpenSubKey(kitsKey))
+            return kits == null ? null : kits.GetValue("KitsRoot10") as string;
     }
 
     private static bool InstallPackage(string package, string installerArguments = null)
