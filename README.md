@@ -6,7 +6,7 @@ Open **Build settings** and select **Install prerequisites**. The launcher extra
 
 Setup uses DXC 1.9 or later from the Windows SDK when available. Otherwise it downloads and verifies Microsoft's DXC 1.9 x64 package and installs it for the current user.
 
-Select the build folder and executable before playing. The launcher keeps those selections for the current session. Each game launch uses a fresh temporary save directory that the launcher removes when VIctory exits. Existing saves from older versions stay in their original directory.
+Select the build folder and executable before playing. The launcher remembers both paths for the current Windows user. VIctory keeps game saves and in-game settings in its usual data folder (`%LOCALAPPDATA%\victory\data` by default). Launches from the launcher and a terminal share saves when they use the same VIctory data folder.
 
 Play uses Direct3D 12 hardware rendering and pauses the launcher's background video until the game exits. World rendering and frame rate depend on the fork's current compatibility.
 
