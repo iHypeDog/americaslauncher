@@ -32,6 +32,7 @@ internal sealed partial class Launcher
     private string gamePath;
     private string buildFolder;
     private bool installing;
+    private bool gameRunning;
     private bool motion = SystemParameters.ClientAreaAnimation;
     private IInputElement previousFocus;
 
@@ -150,7 +151,7 @@ internal sealed partial class Launcher
     private void UpdatePlayback()
     {
         UpdateMotionButton(motion ? "Pause animated background" : "Play animated background");
-        if (!motion || !window.IsLoaded || !window.IsActive || !preview.IsVisible ||
+        if (!motion || gameRunning || !window.IsLoaded || !window.IsActive || !preview.IsVisible ||
             window.WindowState == WindowState.Minimized || options.IsVisible)
         {
             ReleasePlayback();
@@ -230,6 +231,7 @@ internal sealed partial class Launcher
 
     private async void PlayGame()
     {
+        if (installing || gameRunning) return;
         if (!Directory.Exists(buildFolder))
         {
             ShowOptions();
@@ -244,7 +246,6 @@ internal sealed partial class Launcher
             return;
         }
 
-        if (installing) return;
         if (!await CheckPrerequisites(false))
         {
             ShowOptions();
@@ -327,6 +328,8 @@ internal sealed partial class Launcher
             return "Visual C++ x64 is missing or outdated. Select Install prerequisites.";
         var active = ReadActive();
         string exe = RuntimePath(active);
+        if (active == null && !File.Exists(exe))
+            exe = Extract("victory.exe");
         if (!File.Exists(exe))
             return "VIctory is missing. Select Install prerequisites.";
         using (var disk = File.OpenRead(exe))
@@ -382,8 +385,9 @@ internal sealed partial class Launcher
 
     private void SetBusy(bool busy)
     {
-        foreach (string name in new[] { "Check", "Install", "Update", "Play", "Browse", "BrowseExe" })
+        foreach (string name in new[] { "Check", "Install", "Update", "Browse", "BrowseExe" })
             Find<Button>(name).IsEnabled = !busy;
+        Find<Button>("Play").IsEnabled = !busy && !gameRunning;
     }
 
     private async void Install()
@@ -424,21 +428,18 @@ internal sealed partial class Launcher
         try
         {
             Directory.CreateDirectory(sessionData);
-            var start = new ProcessStartInfo(RuntimePath(ReadActive()), "run \"" + path + "\" --execute")
-            {
-                UseShellExecute = false,
-                WorkingDirectory = MediaFolder
-            };
-            start.EnvironmentVariables["VICTORY_GAME_DIR"] = buildFolder;
-            start.EnvironmentVariables["VICTORY_D3D12_WARP"] = "1";
-            start.EnvironmentVariables["VICTORY_DATA_DIR"] = sessionData;
-            SetDxcEnvironment(start, FindDxc(ReadWindowsSdkRoot(), DxcFolder));
-            var process = Process.Start(start);
+            SetGameRunning(true);
+            var process = Process.Start(GameStartInfo(path, sessionData));
             // Keep cleanup alive if the launcher window closes while the game is running.
             new Thread(() =>
             {
                 try { using (process) process.WaitForExit(); }
-                finally { RemoveSessionData(sessionData); }
+                finally
+                {
+                    RemoveSessionData(sessionData);
+                    if (!window.Dispatcher.HasShutdownStarted)
+                        window.Dispatcher.BeginInvoke((Action)(() => SetGameRunning(false)));
+                }
             }).Start();
             started = true;
         }
@@ -446,7 +447,36 @@ internal sealed partial class Launcher
         catch (UnauthorizedAccessException error) { ShowError(error); }
         catch (System.ComponentModel.Win32Exception error) { ShowError(error); }
         catch (InvalidOperationException error) { ShowError(error); }
-        finally { if (!started) RemoveSessionData(sessionData); }
+        finally
+        {
+            if (!started)
+            {
+                RemoveSessionData(sessionData);
+                SetGameRunning(false);
+            }
+        }
+    }
+
+    private ProcessStartInfo GameStartInfo(string path, string sessionData)
+    {
+        string runtime = RuntimePath(ReadActive());
+        var start = new ProcessStartInfo(runtime, "run \"" + path + "\" --execute")
+        {
+            UseShellExecute = false,
+            WorkingDirectory = Path.GetDirectoryName(runtime)
+        };
+        start.EnvironmentVariables["VICTORY_GAME_DIR"] = buildFolder;
+        start.EnvironmentVariables.Remove("VICTORY_D3D12_WARP");
+        start.EnvironmentVariables["VICTORY_DATA_DIR"] = sessionData;
+        SetDxcEnvironment(start, FindDxc(ReadWindowsSdkRoot(), DxcFolder));
+        return start;
+    }
+
+    private void SetGameRunning(bool running)
+    {
+        gameRunning = running;
+        Find<Button>("Play").IsEnabled = !installing && !running;
+        UpdatePlayback();
     }
 
     private static void RemoveSessionData(string directory)
