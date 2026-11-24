@@ -1,0 +1,201 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Americas" Width="1260" Height="760" WindowStyle="None"
+        ResizeMode="NoResize" AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen" FontFamily="Segoe UI" Foreground="#FFF4EF"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
+  <Window.Resources>
+    <Style x:Key="Button" TargetType="Button">
+      <Setter Property="Foreground" Value="#FFF4EF"/>
+      <Setter Property="Background" Value="#18FFFFFF"/>
+      <Setter Property="BorderBrush" Value="#24FFFFFF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="14,9"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Surface" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="14">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#FFBDAD"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="#FFF0DF"/><Setter TargetName="Surface" Property="BorderThickness" Value="2"/></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="Surface" Property="Opacity" Value=".72"/></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Surface" Property="Opacity" Value=".45"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="Icon" TargetType="Button" BasedOn="{StaticResource Button}">
+      <Setter Property="Width" Value="42"/><Setter Property="Height" Value="42"/>
+      <Setter Property="Padding" Value="0"/><Setter Property="FontSize" Value="17"/>
+    </Style>
+    <Style x:Key="PageTab" TargetType="RadioButton">
+      <Setter Property="Foreground" Value="#FFCABACB"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Width" Value="42"/>
+      <Setter Property="Height" Value="42"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RadioButton">
+            <Border x:Name="TabSurface" CornerRadius="11" BorderThickness="1" BorderBrush="Transparent" Background="Transparent">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Foreground" Value="#FFFFD7C9"/>
+                <Setter TargetName="TabSurface" Property="Background" Value="#FF3D2538"/>
+                <Setter TargetName="TabSurface" Property="BorderBrush" Value="#FF6B4056"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="TabSurface" Property="BorderBrush" Value="#FFA6677C"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="TabSurface" Property="BorderBrush" Value="#FFFFC4B3"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <LinearGradientBrush x:Key="PlayGradient" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#FFD82468" Offset="0"/>
+      <GradientStop Color="#FFE04470" Offset=".53"/>
+      <GradientStop Color="#FFE76858" Offset="1"/>
+    </LinearGradientBrush>
+  </Window.Resources>
+  <Border x:Name="Frame" Background="#FF130F19" BorderBrush="#FF3F2B40" BorderThickness="1" CornerRadius="29">
+    <Grid>
+      <Grid x:Name="Dashboard" Margin="17,0,17,17">
+        <Grid.RowDefinitions><RowDefinition Height="69"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="62"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Grid x:Name="TitleBar" Grid.ColumnSpan="2" Background="Transparent">
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0,0,0" IsHitTestVisible="False">
+            <Border x:Name="AppIcon" Width="40" Height="40" Margin="0,0,14,0"/>
+            <TextBlock Text="Americas" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,5,0">
+            <Button x:Name="Settings" Style="{StaticResource Icon}" Width="36" Height="34" Content="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="14" ToolTip="Game settings" AutomationProperties.Name="Game settings" Margin="0,0,12,0"/>
+            <Button x:Name="Minimize" Style="{StaticResource Icon}" Width="36" Height="34" Content="&#xE921;" FontFamily="Segoe MDL2 Assets" FontSize="10" ToolTip="Minimize" AutomationProperties.Name="Minimize" Margin="0,0,7,0"/>
+            <Button x:Name="Close" Style="{StaticResource Icon}" Width="36" Height="34" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="11" ToolTip="Close" AutomationProperties.Name="Close"/>
+          </StackPanel>
+        </Grid>
+        <Border Grid.Row="1" Width="50" CornerRadius="16" BorderThickness="1" BorderBrush="#FF382638" Background="#FF1D1522"
+                HorizontalAlignment="Left" VerticalAlignment="Top" Padding="3">
+          <StackPanel>
+            <RadioButton x:Name="GameTab" Style="{StaticResource PageTab}" GroupName="LauncherPage" IsChecked="True"
+                         ToolTip="Game" AutomationProperties.Name="Game" Margin="0,0,0,4">
+              <Path Width="22" Height="20" Stretch="Uniform" StrokeThickness="1.7" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                    Data="M 7,5 L 17,5 C 19,5 21,6 21.5,8 L 23,15 C 23.5,18 21,19 19,17 L 16,14 L 8,14 L 5,17 C 3,19 .5,18 1,15 L 2.5,8 C 3,6 5,5 7,5 Z M 5.5,9.5 L 10,9.5 M 7.75,7.25 L 7.75,11.75 M 16,8.5 L 16,8.6 M 19,10.5 L 19,10.6"/>
+            </RadioButton>
+            <RadioButton x:Name="ModsTab" Style="{StaticResource PageTab}" GroupName="LauncherPage"
+                         ToolTip="Mods" AutomationProperties.Name="Mods">
+              <Path Width="21" Height="21" Stretch="Uniform" StrokeThickness="1.7" StrokeLineJoin="Round"
+                    Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}"
+                    Data="M 12,1.5 L 21.5,7 L 21.5,17 L 12,22.5 L 2.5,17 L 2.5,7 Z M 2.5,7 L 12,12.5 L 21.5,7 M 12,12.5 L 12,22.5"/>
+            </RadioButton>
+          </StackPanel>
+        </Border>
+        <Grid x:Name="Hero" Grid.Row="1" Grid.Column="1">
+          <Border CornerRadius="24" Background="#FF3E243F"/>
+          <Image x:Name="Poster" Stretch="UniformToFill"/>
+          <MediaElement x:Name="Preview" LoadedBehavior="Manual" UnloadedBehavior="Close" IsMuted="True" Stretch="UniformToFill" Opacity="0" IsHitTestVisible="False"/>
+          <Border IsHitTestVisible="False">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0.45" EndPoint="1,0.54">
+                <GradientStop Color="#FA180F20" Offset="0"/>
+                <GradientStop Color="#D71A1021" Offset=".26"/>
+                <GradientStop Color="#3B1B1022" Offset=".64"/>
+                <GradientStop Color="#18140D18" Offset="1"/>
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+          <Border IsHitTestVisible="False">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#20160C1D" Offset="0"/>
+                <GradientStop Color="#00160C1D" Offset=".47"/>
+                <GradientStop Color="#AD100B16" Offset="1"/>
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+          <Border CornerRadius="24" BorderThickness="1" BorderBrush="#4EFFE4D7" IsHitTestVisible="False"/>
+          <Path x:Name="GameLogo" AutomationProperties.Name="VI" Width="198" Height="146" Fill="White"
+                Margin="57,0,0,105" HorizontalAlignment="Left" VerticalAlignment="Center" Stretch="Uniform"
+                IsHitTestVisible="False" Data="M 2.8,5 L 13.7,5 18.1,14.6 22.4,5 32.8,5 17.9,36 Z M 34.7,5 H 44.9 V 36 H 34.7 Z"/>
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="57,0,0,48">
+            <Button x:Name="Play" Width="186" Height="64" Foreground="White" Background="{StaticResource PlayGradient}"
+                    Cursor="Hand" ToolTip="Open game settings" AutomationProperties.Name="Play" FocusVisualStyle="{x:Null}">
+              <Button.Template>
+                <ControlTemplate TargetType="Button">
+                  <Grid>
+                    <Border x:Name="PlaySurface" CornerRadius="24" Background="{TemplateBinding Background}">
+                      <Border.Effect>
+                        <DropShadowEffect Color="#FFF13A75" ShadowDepth="0" BlurRadius="23" Opacity=".42"/>
+                      </Border.Effect>
+                    </Border>
+                    <Border x:Name="Hover" CornerRadius="24" Background="#20FFFFFF" Opacity="0"/>
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                  </Grid>
+                  <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Hover" Property="Opacity" Value="1"/></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="PlaySurface" Property="BorderBrush" Value="White"/><Setter TargetName="PlaySurface" Property="BorderThickness" Value="2"/></Trigger>
+                    <Trigger Property="IsPressed" Value="True"><Setter TargetName="PlaySurface" Property="Opacity" Value=".78"/></Trigger>
+                  </ControlTemplate.Triggers>
+                </ControlTemplate>
+              </Button.Template>
+              <StackPanel Orientation="Horizontal">
+                <Path Width="22" Height="24" Stretch="Uniform" Fill="White" Margin="0,0,15,0" VerticalAlignment="Center"
+                      Data="M 2,3 Q 2,0 5,1.6 L 21,10.8 Q 23,12 21,13.2 L 5,22.4 Q 2,24 2,21 Z"/>
+                <TextBlock Text="Play" FontSize="32" FontWeight="Bold" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Button>
+            <Button x:Name="Update" Content="update version" Style="{StaticResource Button}" Margin="14,0,0,0" VerticalAlignment="Center" ToolTip="Build the latest VIctory revision from GitHub"/>
+          </StackPanel>
+          <Button x:Name="ToggleMotion" Style="{StaticResource Icon}" Background="#D8201526" FontFamily="Segoe MDL2 Assets"
+                  Content="&#xE769;" FontSize="15" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,25,24"/>
+        </Grid>
+        <Border x:Name="ModsPage" Grid.Row="1" Grid.Column="1" Visibility="Collapsed" CornerRadius="24" BorderThickness="1" BorderBrush="#FF53384E">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+              <GradientStop Color="#FF291C2F" Offset="0"/>
+              <GradientStop Color="#FF1A131F" Offset="1"/>
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock x:Name="ModsTitle" Text="Mods" FontSize="42" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock x:Name="ModsMessage" Text="In development" FontSize="20" Foreground="#FFFFD7C9"
+                       HorizontalAlignment="Center" Margin="0,7,0,0"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+      <Grid x:Name="Options" Visibility="Collapsed">
+        <Border x:Name="OptionsBackdrop" Background="#B70D0912" CornerRadius="28"/>
+        <Border Background="#FF24182A" BorderBrush="#FF785168" BorderThickness="1" CornerRadius="24"
+                Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="27" KeyboardNavigation.TabNavigation="Cycle">
+          <StackPanel>
+            <Grid Margin="0,0,0,13">
+              <TextBlock Text="Build settings" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+              <Button x:Name="CloseOptions" Style="{StaticResource Icon}" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" FontSize="11" HorizontalAlignment="Right" ToolTip="Close settings" AutomationProperties.Name="Close settings"/>
+            </Grid>
+            <TextBlock x:Name="LocalStatus" Foreground="#FFD9BFD1" TextWrapping="Wrap" Margin="0,0,0,12" Visibility="Collapsed"/>
+            <Button x:Name="Browse" Style="{StaticResource Button}" Content="Choose build folder" HorizontalAlignment="Left"/>
+            <TextBlock x:Name="FolderPath" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="#FFD9BFD1" Margin="0,4,0,12"/>
+            <Button x:Name="BrowseExe" Style="{StaticResource Button}" Content="Choose executable (.exe)" HorizontalAlignment="Left"/>
+            <TextBlock x:Name="ExePath" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Foreground="#FFD9BFD1" Margin="0,4,0,0"/>
+            <TextBlock Text="VIctory · Xbox Series X|S" FontSize="18" FontWeight="SemiBold" Margin="0,18,0,6"/>
+            <TextBlock Text="This experimental build uses software rendering (WARP). Menus may open, but the game world still has rendering issues." TextWrapping="Wrap" Foreground="#FFD9BFD1"/>
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0"><Button x:Name="Install" Style="{StaticResource Button}" Content="Install prerequisites"/><Button x:Name="Check" Style="{StaticResource Button}" Margin="8,0,0,0" Content="Check prerequisites"/></StackPanel>
+            <TextBlock x:Name="InstallStatus" TextWrapping="Wrap" Margin="0,8,0,0" Foreground="#FFD9BFD1"/>
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>
