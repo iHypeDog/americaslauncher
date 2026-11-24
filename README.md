@@ -7,6 +7,7 @@ Americas Launcher runs compatible game builds on Windows using the bundled [vict
 You need Windows 10 or 11 x64, a CPU with AVX2, and a Direct3D 12 GPU with Shader Model 6.6 support. World rendering also requires mesh shaders, and startup needs several GiB of available Windows commit memory.
 
 1. Download and open [Americas Launcher.exe](./Americas%20Launcher.exe).
+- in launcher UI
 2. In **Build settings**, use **Choose build folder** and **Choose executable (.exe)** to select your game files.
 3. Select **Play**. If the launcher reports a missing runtime, select **Install prerequisites** in **Build settings** and try again.
 
