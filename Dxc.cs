@@ -94,7 +94,7 @@ internal sealed partial class Launcher
             if (Directory.Exists(installedFolder)) Directory.Delete(installedFolder, true);
             Directory.Move(staging, installedFolder);
         }
-        finally { RemoveSessionData(staging); }
+        finally { RemoveTemporaryDirectory(staging); }
     }
 
     private static void SetDxcEnvironment(ProcessStartInfo start, string directory)

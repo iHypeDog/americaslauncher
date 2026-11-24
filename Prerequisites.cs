@@ -109,7 +109,7 @@ internal sealed partial class Launcher
             File.WriteAllText(Path.Combine(directory, "check.rs"), "fn main() {}");
             RunTool(rustup, "run " + toolchain + " rustc --target " + BuildTarget + " check.rs", directory);
         }
-        finally { RemoveSessionData(directory); }
+        finally { RemoveTemporaryDirectory(directory); }
     }
 
     private static string FindVisualStudio(string arguments)

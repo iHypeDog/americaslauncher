@@ -19,6 +19,7 @@ internal sealed partial class Launcher
     private static readonly Assembly Assembly = typeof(Launcher).Assembly;
     private static readonly string AppData = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ViceCityLauncher");
+    private static readonly string SelectionFile = Path.Combine(AppData, "game-path.txt");
     private static readonly string MediaFolder = Path.Combine(
         AppData, "Media", Assembly.ManifestModule.ModuleVersionId.ToString("N"));
 
@@ -66,7 +67,7 @@ internal sealed partial class Launcher
         var hero = Find<Grid>("Hero");
         hero.SizeChanged += delegate { hero.Clip = new RectangleGeometry(new Rect(hero.RenderSize), 24, 24); };
 
-        SelectGame(null, null);
+        RestoreGameSelection();
         Find<Grid>("TitleBar").MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e)
         {
             if (e.ButtonState == MouseButtonState.Pressed)
@@ -266,7 +267,7 @@ internal sealed partial class Launcher
             try
             {
                 if (picker.ShowDialog(owner) == System.Windows.Forms.DialogResult.OK)
-                    SelectGame(gamePath, picker.SelectedPath);
+                    SaveGameSelection(gamePath, picker.SelectedPath);
             }
             finally { owner.ReleaseHandle(); }
         }
@@ -291,7 +292,64 @@ internal sealed partial class Launcher
             return;
         }
 
-        SelectGame(picker.FileName, buildFolder);
+        SaveGameSelection(picker.FileName, buildFolder);
+    }
+
+    private void RestoreGameSelection()
+    {
+        string path = null;
+        string folder = null;
+        try
+        {
+            if (File.Exists(SelectionFile))
+            {
+                var lines = File.ReadAllLines(SelectionFile);
+                if (lines.Length > 0 && Path.IsPathRooted(lines[0]) &&
+                    string.Equals(Path.GetExtension(lines[0]), ".exe", StringComparison.OrdinalIgnoreCase))
+                    path = lines[0];
+
+                if (lines.Length > 1 && Path.IsPathRooted(lines[1]))
+                    folder = lines[1];
+                else if (path != null && (lines.Length == 1 ||
+                    string.Equals(lines[1], "victory", StringComparison.OrdinalIgnoreCase)))
+                    folder = Path.GetDirectoryName(path);
+
+                if (lines.Length > 1 && string.Equals(lines[1], "windows", StringComparison.OrdinalIgnoreCase))
+                    path = null;
+            }
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
+        catch (ArgumentException) { }
+        SelectGame(path, folder);
+    }
+
+    private void SaveGameSelection(string path, string folder)
+    {
+        SelectGame(path, folder);
+        string temporary = SelectionFile + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            Directory.CreateDirectory(AppData);
+            File.WriteAllLines(temporary, new[] { path ?? "", folder ?? "" });
+            try
+            {
+                File.Move(temporary, SelectionFile);
+            }
+            catch (IOException)
+            {
+                if (!File.Exists(SelectionFile)) throw;
+                File.Replace(temporary, SelectionFile, null);
+            }
+        }
+        catch (IOException error) { SetLocalStatus("Could not save the build paths. " + error.Message); }
+        catch (UnauthorizedAccessException error) { SetLocalStatus("Could not save the build paths. " + error.Message); }
+        finally
+        {
+            try { File.Delete(temporary); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
     }
 
     private void SelectGame(string path, string folder)
@@ -423,41 +481,31 @@ internal sealed partial class Launcher
 
     private void LaunchGame(string path)
     {
-        string sessionData = Path.Combine(Path.GetTempPath(), "Americas-" + Guid.NewGuid().ToString("N"));
         bool started = false;
         try
         {
-            Directory.CreateDirectory(sessionData);
             SetGameRunning(true);
-            var process = Process.Start(GameStartInfo(path, sessionData));
-            // Keep cleanup alive if the launcher window closes while the game is running.
-            new Thread(() =>
+            var process = Process.Start(GameStartInfo(path));
+            var watcher = new Thread(() =>
             {
                 try { using (process) process.WaitForExit(); }
                 finally
                 {
-                    RemoveSessionData(sessionData);
                     if (!window.Dispatcher.HasShutdownStarted)
                         window.Dispatcher.BeginInvoke((Action)(() => SetGameRunning(false)));
                 }
-            }).Start();
+            }) { IsBackground = true };
+            watcher.Start();
             started = true;
         }
         catch (IOException error) { ShowError(error); }
         catch (UnauthorizedAccessException error) { ShowError(error); }
         catch (System.ComponentModel.Win32Exception error) { ShowError(error); }
         catch (InvalidOperationException error) { ShowError(error); }
-        finally
-        {
-            if (!started)
-            {
-                RemoveSessionData(sessionData);
-                SetGameRunning(false);
-            }
-        }
+        finally { if (!started) SetGameRunning(false); }
     }
 
-    private ProcessStartInfo GameStartInfo(string path, string sessionData)
+    private ProcessStartInfo GameStartInfo(string path)
     {
         string runtime = RuntimePath(ReadActive());
         var start = new ProcessStartInfo(runtime, "run \"" + path + "\" --execute")
@@ -467,7 +515,6 @@ internal sealed partial class Launcher
         };
         start.EnvironmentVariables["VICTORY_GAME_DIR"] = buildFolder;
         start.EnvironmentVariables.Remove("VICTORY_D3D12_WARP");
-        start.EnvironmentVariables["VICTORY_DATA_DIR"] = sessionData;
         SetDxcEnvironment(start, FindDxc(ReadWindowsSdkRoot(), DxcFolder));
         return start;
     }
@@ -479,7 +526,7 @@ internal sealed partial class Launcher
         UpdatePlayback();
     }
 
-    private static void RemoveSessionData(string directory)
+    private static void RemoveTemporaryDirectory(string directory)
     {
         try { Directory.Delete(directory, true); }
         catch (IOException) { }
