@@ -13,6 +13,7 @@ internal sealed partial class Launcher
     private const string Repository = "https://github.com/Marvisak/VIctory.git";
     private static readonly string Updates = Path.Combine(AppData, "Updates");
     private static readonly string ActiveFile = Path.Combine(Updates, "active.txt");
+    private static readonly string UpdateSource = Path.Combine(Updates, "source");
 
     private static string[] ReadActive()
     {
@@ -50,23 +51,34 @@ internal sealed partial class Launcher
         finally { button.Content = "update version"; installing = false; SetBusy(false); }
     }
 
-    private static string FetchUpdate(IProgress<string> progress)
+    private static T WithUpdateLock<T>(Func<T> work)
     {
         Directory.CreateDirectory(Updates);
         using (var updateLock = new FileStream(Path.Combine(Updates, "update.lock"), FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
-        {
-            string source = Path.Combine(Updates, "source");
-            Directory.CreateDirectory(source);
-            string git = FindTool("git");
-            RunTool(git, "init --quiet", source);
-            RunTool(git, "fetch --depth=1 --no-tags " + Repository + " HEAD", source);
-            string revision = RunTool(git, "rev-parse FETCH_HEAD", source).Trim();
-            if (!Regex.IsMatch(revision, "^[0-9a-f]{40}$")) throw new IOException("Git returned an invalid revision.");
-            return ActivateRevision(progress, source, git, revision);
-        }
+            return work();
     }
 
-    private static string ActivateRevision(IProgress<string> progress, string source, string git, string revision)
+    private static string CheckoutLatest(string git)
+    {
+        Directory.CreateDirectory(UpdateSource);
+        RunTool(git, "init --quiet", UpdateSource);
+        RunTool(git, "fetch --depth=1 --no-tags " + Repository + " HEAD", UpdateSource);
+        string revision = RunTool(git, "rev-parse FETCH_HEAD", UpdateSource).Trim();
+        if (!Regex.IsMatch(revision, "^[0-9a-f]{40}$")) throw new IOException("Git returned an invalid revision.");
+        RunTool(git, "checkout --quiet --detach --force " + revision, UpdateSource);
+        return revision;
+    }
+
+    private static string FetchUpdate(IProgress<string> progress)
+    {
+        return WithUpdateLock(() =>
+        {
+            string revision = CheckoutLatest(RequireTool("git"));
+            return ActivateRevision(progress, revision);
+        });
+    }
+
+    private static string ActivateRevision(IProgress<string> progress, string revision)
     {
         string shortId = revision.Substring(0, 8);
         try
@@ -78,15 +90,16 @@ internal sealed partial class Launcher
         }
         catch (IOException) { /* Rebuild a damaged installation. */ }
 
-        string cargo = FindTool("cargo");
-        RunTool(git, "checkout --quiet --detach --force " + revision, source);
+        string rustup = RequireTool("rustup");
+        string toolchain = ReadToolchain();
         progress.Report("Building " + shortId + "…");
-        RunTool(cargo, "build --locked --profile diag -p victory --features diagnostics --target x86_64-pc-windows-msvc --target-dir ../build", source);
+        RunTool(rustup, "run --install " + toolchain + " cargo build --locked --profile diag -p victory --features diagnostics --target " +
+            BuildTarget + " --target-dir ../build", UpdateSource);
         string slot = Guid.NewGuid().ToString("N");
         var next = new[] { revision, slot, "" };
         string exe = RuntimePath(next);
         Directory.CreateDirectory(Path.GetDirectoryName(exe));
-        File.Copy(Path.Combine(Updates, "build", "x86_64-pc-windows-msvc", "diag", "victory.exe"), exe);
+        File.Copy(Path.Combine(Updates, "build", BuildTarget, "diag", "victory.exe"), exe);
         progress.Report("Testing update…");
         string problem = TestStartup(exe);
         if (problem != null) throw new IOException(problem);
@@ -100,19 +113,6 @@ internal sealed partial class Launcher
         return "VIctory updated to " + shortId + ". Press Play to use this version.";
     }
 
-    private static string FindTool(string name)
-    {
-        foreach (string entry in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';'))
-        {
-            string directory = entry.Trim().Trim('"');
-            if (!Path.IsPathRooted(directory)) continue;
-            string path = Path.Combine(directory, name + ".exe");
-            if (File.Exists(path)) return path;
-        }
-        throw new IOException(name == "git" ? "Install Git for Windows and reopen Americas to update VIctory." :
-            "Building a new revision requires Rust (rustup) and Visual Studio C++ Build Tools with the Windows SDK. Install them and reopen Americas.");
-    }
-
     private static string RunTool(string tool, string arguments, string directory)
     {
         var start = new ProcessStartInfo(tool, arguments) {
@@ -120,6 +120,7 @@ internal sealed partial class Launcher
             RedirectStandardOutput = true, RedirectStandardError = true
         };
         start.EnvironmentVariables["GIT_TERMINAL_PROMPT"] = "0";
+        start.EnvironmentVariables["PATH"] = ToolSearchPath();
         using (var process = Process.Start(start))
         {
             var output = process.StandardOutput.ReadToEndAsync();
@@ -128,8 +129,9 @@ internal sealed partial class Launcher
             if (process.ExitCode != 0)
             {
                 string detail = errors.Result.Trim();
+                if (detail.Length == 0) detail = output.Result.Trim();
                 if (detail.Length > 1600) detail = detail.Substring(detail.Length - 1600);
-                throw new IOException(Path.GetFileNameWithoutExtension(tool) + " failed. " + detail);
+                throw new IOException(Path.GetFileNameWithoutExtension(tool) + " failed (exit code " + process.ExitCode + "). " + detail);
             }
             return output.Result;
         }
